@@ -69,7 +69,7 @@ impl YmSong {
     }
 
     fn parse_lha_reader<R: Read + 'static>(lha_reader: LhaDecodeReader<R>) -> io::Result<YmSong> {
-        let header = lha_reader.header();
+        // let header = lha_reader.header();
         // println!("{:?} {} {:?} {} {:?}",
         //     header.parse_pathname(),
         //     header.level,
