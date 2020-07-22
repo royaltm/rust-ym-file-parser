@@ -70,12 +70,12 @@ impl YmSong {
 
     fn parse_lha_reader<R: Read + 'static>(lha_reader: LhaDecodeReader<R>) -> io::Result<YmSong> {
         let header = lha_reader.header();
-        println!("{:?} {} {:?} {} {:?}",
-            header.parse_pathname(),
-            header.level,
-            header.compression_method().unwrap(),
-            header.parse_last_modified(),
-            header.parse_os_type().unwrap());
+        // println!("{:?} {} {:?} {} {:?}",
+        //     header.parse_pathname(),
+        //     header.level,
+        //     header.compression_method().unwrap(),
+        //     header.parse_last_modified(),
+        //     header.parse_os_type().unwrap());
         let title = lha_reader.header().parse_pathname().file_name()
                         .map(|s| s.to_string_lossy().into_owned())
                         .unwrap_or_else(|| String::new());
@@ -95,7 +95,6 @@ fn parse_ym<R: io::BufRead>(
 {
     let mut ident = [0u8;4];
     rd.read_exact(&mut ident)?;
-    println!("{:?}", ident);
     match &ident {
         b"YM2!" => parse_ym2(rd, file_len - mem::size_of_val(&ident) as u64, title, created),
         b"YM3!"|
@@ -135,8 +134,6 @@ fn parse_ym3<R: io::BufRead>(
         created: Option<NaiveDateTime>
     ) -> io::Result<YmSong>
 {
-    println!("{}", version);
-    // let size = lha_reader.len();
     let includes_loop = match size % 14 {
         0 => false,
         4 => true,
@@ -157,7 +154,6 @@ fn parse_ym3<R: io::BufRead>(
 }
 
 fn parse_ym4<R: io::BufRead>(mut rd: R, created: Option<NaiveDateTime>) -> io::Result<YmSong> {
-    println!("YM4");
     let (nframes, song_attrs, dd_nsamples) = parse_ym4_common(rd.by_ref())?;
     let loop_frame = read_dword(rd.by_ref())?;
     let (dd_samples, dd_samples_ends) = read_digidrum_samples(rd.by_ref(), dd_nsamples, song_attrs)?;
@@ -180,12 +176,9 @@ fn parse_ym5<R: io::BufRead>(
         created: Option<NaiveDateTime>
     ) -> io::Result<YmSong>
 {
-    println!("{}", version);
     let (nframes, song_attrs, dd_nsamples) = parse_ym4_common(rd.by_ref())?;
-    println!("nf: {} {:?} dd: {}", nframes, song_attrs, dd_nsamples);
     let chipset_frequency = read_dword(rd.by_ref())?;
     let frame_frequency = read_word(rd.by_ref())?;
-    println!("cf: {} ff: {}", chipset_frequency, frame_frequency);
     if chipset_frequency == 0 {
         return Err(io::Error::new(io::ErrorKind::InvalidData, "chipset period must not be 0"))
     }
@@ -194,20 +187,19 @@ fn parse_ym5<R: io::BufRead>(
     }
 
     let loop_frame = read_dword(rd.by_ref())?;
-    println!("loop_frame: {}", loop_frame);
     if 0 != read_word(rd.by_ref())? {
         return Err(io::Error::new(io::ErrorKind::InvalidData, "unknown additional header data"))
     }
     let (dd_samples, dd_samples_ends) = read_digidrum_samples(rd.by_ref(), dd_nsamples, song_attrs)?;
     let (title, author, comments) = read_song_meta(rd.by_ref())?;
-    println!("{} {} {}", title, author, comments);
+
     let frames = if song_attrs.is_interleaved() {
         read_interleaved_frames(nframes, 16, rd.by_ref())
     }
     else {
         read_non_interleaved_frames(nframes, 16, rd.by_ref())
     }?;
-    println!("read frames");
+
     read_song_end_tag(rd)?;
 
     Ok(YmSong::new(version, frames, loop_frame, title, created)
