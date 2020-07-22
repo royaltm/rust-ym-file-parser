@@ -1,6 +1,11 @@
 YM-file parser
 --------------
 
+```toml
+[dependencies]
+ay-file-parser = { git = "https://github.com/royaltm/rust-ym-file-parser" }
+```
+
 [Documentation].
 
 This [format] was designed by [Leonard/OXYGENE] for his AY-emulator [StSound].
