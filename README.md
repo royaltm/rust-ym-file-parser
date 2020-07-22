@@ -5,7 +5,7 @@ YM-file parser
 
 ```toml
 [dependencies]
-ay-file-parser = { git = "https://github.com/royaltm/rust-ym-file-parser" }
+ym-file-parser = { git = "https://github.com/royaltm/rust-ym-file-parser" }
 ```
 
 [Documentation].
