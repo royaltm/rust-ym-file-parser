@@ -1,3 +1,4 @@
+use core::time::Duration;
 use core::num::NonZeroU32;
 use core::fmt;
 use core::ops::Range;
@@ -255,6 +256,12 @@ impl YmSong {
         self.chipset_frequency = chipset_frequency;
         self.frame_frequency = frame_frequency;
         self
+    }
+
+    /// Returns the song duration.
+    pub fn song_duration(&self) -> Duration {
+        let seconds = self.frames.len() as f64 / self.frame_frequency as f64;
+        Duration::from_secs_f64(seconds)
     }
 
     /// Returns the AY/YM chipset clock frequency.
