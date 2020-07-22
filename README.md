@@ -1,6 +1,8 @@
 YM-file parser
 --------------
 
+`Cargo.toml`:
+
 ```toml
 [dependencies]
 ay-file-parser = { git = "https://github.com/royaltm/rust-ym-file-parser" }
