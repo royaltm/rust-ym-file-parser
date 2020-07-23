@@ -27,6 +27,13 @@
 <span id="27">27</span>
 <span id="28">28</span>
 <span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! YM-file parser and player helper.</span>
 <span class="doccomment">//!</span>
@@ -34,7 +41,14 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! YM-files are distributed as compressed [LHA] archives.</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! This library can help uncompress, parse the YM-files, and produce the AY/YM register changes for the players.</span>
+<span class="doccomment">//! This library can help uncompress, parse the YM-files, and produce the AY/YM register changes</span>
+<span class="doccomment">//! for the players.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! The following YM-file types are supported: `Ym2!`, `Ym3!`, `YM3b`, `Ym4!`, `Ym5!` and `Ym6!`.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! All special [effects] described by Leonard are being recognized.</span>
+<span class="doccomment">//! [Here][YmFrame] is the description of how those special effects and AY/YM register data</span>
+<span class="doccomment">//! are being encoded in frames.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! [format]: http://leonard.oxg.free.fr/ymformat.html</span>
 <span class="doccomment">//! [Leonard/OXYGENE]: http://leonard.oxg.free.fr</span>
