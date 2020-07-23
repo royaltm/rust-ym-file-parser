@@ -25,7 +25,7 @@ impl YmSong {
     /// Provide `file_name` which will be used as a fallback song title.
     ///
     /// Returns an instance of `YmSong` on success.
-    pub fn parse_any<R: Read + Seek + 'static>(
+    pub fn parse_any<R: Read + Seek>(
             mut rd: R,
             file_name: String
         ) -> io::Result<YmSong>
@@ -40,8 +40,8 @@ impl YmSong {
         };
         let file_len = rd.seek(SeekFrom::End(0))?;
         rd.seek(SeekFrom::Start(pos))?;
-        let buf_rd = io::BufReader::new(rd);
-        parse_ym(buf_rd, file_len, file_name, None)
+        let mut buf_rd = io::BufReader::new(rd);
+        parse_ym(&mut buf_rd, file_len, file_name, None)
     }
 
     /// Attempts to parse an uncompressed YM-file from the given stream source.
@@ -57,18 +57,18 @@ impl YmSong {
         let pos = rd.seek(SeekFrom::Current(0))?;
         let file_len = rd.seek(SeekFrom::End(0))?;
         rd.seek(SeekFrom::Start(pos))?;
-        let buf_rd = io::BufReader::new(rd);
-        parse_ym(buf_rd, file_len, file_name, None)
+        let mut buf_rd = io::BufReader::new(rd);
+        parse_ym(&mut buf_rd, file_len, file_name, None)
     }
 
     /// Attempts to parse a compressed YM-file from the given stream source.
     ///
     /// Returns an instance of `YmSong` on success.
-    pub fn parse<R: Read + 'static>(rd: R) -> io::Result<YmSong> {
+    pub fn parse<R: Read>(rd: R) -> io::Result<YmSong> {
         Self::parse_lha_reader(LhaDecodeReader::new(rd)?)
     }
 
-    fn parse_lha_reader<R: Read + 'static>(lha_reader: LhaDecodeReader<R>) -> io::Result<YmSong> {
+    fn parse_lha_reader<R: Read>(lha_reader: LhaDecodeReader<R>) -> io::Result<YmSong> {
         // let header = lha_reader.header();
         // println!("{:?} {} {:?} {} {:?}",
         //     header.parse_pathname(),
@@ -81,13 +81,13 @@ impl YmSong {
                         .unwrap_or_else(|| String::new());
         let created = lha_reader.header().parse_last_modified().to_naive_utc();
         let file_len = lha_reader.len();
-        let buf_rd = io::BufReader::new(lha_reader);
-        parse_ym(buf_rd, file_len, title, created)
+        let mut buf_rd = io::BufReader::new(lha_reader);
+        parse_ym(&mut buf_rd, file_len, title, created)
     }
 }
 
-fn parse_ym<R: io::BufRead>(
-        mut rd: R,
+fn parse_ym(
+        rd: &mut dyn io::BufRead,
         file_len: u64,
         title: String,
         created: Option<NaiveDateTime>
