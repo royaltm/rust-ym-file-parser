@@ -20,6 +20,6 @@ log = "0.4"
 simple_logger = "1.6.0"
 
 [dependencies.delharc]
-version = "0.2.1"
+version = "0.2.2"
 default-features = false
 features = []
