@@ -142,7 +142,7 @@ pub struct YmSong {
 ///   determine the effect's volume.
 /// * For the [`Sync Buzzer`][SyncBuzzer] the 4 lowest `X` bits determine the effect's `Envelope shape`.
 /// * For the [`DIGI-DRUM`][DigiDrum] effect the 5 `X` bits determine the played sample number.
-/// * The `DIGI-DRUM` sample plays until its end or if its overridden by another effect.
+/// * The `DIGI-DRUM` sample plays until its end or if it's overridden by another effect.
 /// * All other effects are active only for the duration of a single frame.
 /// * When the `DIGI-DRUM` is active the volume register from the frame for the relevant voice is being
 ///   ignored and the relevant voice mixer tone and noise bits are forced to be set.
