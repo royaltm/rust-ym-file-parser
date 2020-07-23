@@ -4,7 +4,14 @@
 //!
 //! YM-files are distributed as compressed [LHA] archives.
 //!
-//! This library can help uncompress, parse the YM-files, and produce the AY/YM register changes for the players.
+//! This library can help uncompress, parse the YM-files, and produce the AY/YM register changes
+//! for the players.
+//!
+//! The following YM-file types are supported: `Ym2!`, `Ym3!`, `YM3b`, `Ym4!`, `Ym5!` and `Ym6!`.
+//!
+//! All special [effects] described by Leonard are being recognized.
+//! [Here][decode::YmFrame] is the description of how those special effects and AY/YM register data
+//! are being encoded in frames.
 //!
 //! [format]: http://leonard.oxg.free.fr/ymformat.html
 //! [Leonard/OXYGENE]: http://leonard.oxg.free.fr
