@@ -308,13 +308,13 @@ impl YmFrame {
 
     /// Returns the value of the volume register for the indicated `chan`.
     ///
-    /// The 2 lowest `chan` bits indicates the voice channel:
+    /// The 2 lowest bits of `chan` indicate the voice channel:
     /// ```text
     ///  b1 b0 voice channel
     ///  0  0  A
     ///  0  1  B
     ///  1  0  C
-    ///  1  1  invalid
+    ///  1  1  invalid (panics in debug mode)
     /// ```
     pub fn vol(&self, chan: u8) -> u8 {
         let chan = chan & 3;

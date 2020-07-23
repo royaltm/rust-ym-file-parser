@@ -46,38 +46,38 @@ bitflags! {
 }
 
 impl SongAttributes {
+    /// Returns `true` if frame data was layed out interleaved.
     pub fn is_interleaved(self) -> bool {
         self.intersects(SongAttributes::INTERLEAVED)
     }
 
+    /// Returns `true` if `DIGI-DRUM` data was 4-bit.
     pub fn is_4bit(self) -> bool {
         self.intersects(SongAttributes::DIGIDRUM_4BIT)
     }
 
+    /// Returns `true` if `DIGI-DRUM` data was signed.
     pub fn is_signed(self) -> bool {
         self.intersects(SongAttributes::DIGIDRUM_SIGNED)
     }
 }
 
 impl FxCtrlFlags {
-    pub fn into_coarse_period(self) -> u8 {
-        (self & FxCtrlFlags::COARSE_PERIOD_MASK).bits()
-    }
-
-    pub fn is_timer_restart(self) -> bool {
-        self.intersects(FxCtrlFlags::MFP_TIMER_RESTART)
-    }
-
+    /// Returns the tuple of timer restart boolean and the channel number `[0, 2]` if an
+    /// effect is active. Otherwise returns `None`.
     pub fn ts_channel(self) -> Option<(bool, u8)> {
         FxChannel::from(self).channel().map(|ch|
-            (self.is_timer_restart(), ch)
+            (self.intersects(FxCtrlFlags::MFP_TIMER_RESTART), ch)
         )
     }
 
+    /// Returns the channel number `[0, 2]` if an effect is active. Otherwise returns `None`.
     pub fn dd_channel(self) -> Option<u8> {
         FxChannel::from(self).channel()
     }
 
+    /// Returns the tuple of the effect type and the channel number `[0, 2]` if an
+    /// effect is active. Otherwise returns `None`.
     pub fn fx6_channel(self) -> Option<(FxType, u8)> {
         FxChannel::from(self).channel().map(|ch|
             (FxType::from(self), ch)
