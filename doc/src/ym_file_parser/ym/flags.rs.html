@@ -165,38 +165,38 @@
 }
 
 <span class="kw">impl</span> <span class="ident">SongAttributes</span> {
+    <span class="doccomment">/// Returns `true` if frame data was layed out interleaved.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_interleaved</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">intersects</span>(<span class="ident">SongAttributes</span>::<span class="ident">INTERLEAVED</span>)
     }
 
+    <span class="doccomment">/// Returns `true` if `DIGI-DRUM` data was 4-bit.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_4bit</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">intersects</span>(<span class="ident">SongAttributes</span>::<span class="ident">DIGIDRUM_4BIT</span>)
     }
 
+    <span class="doccomment">/// Returns `true` if `DIGI-DRUM` data was signed.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_signed</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">intersects</span>(<span class="ident">SongAttributes</span>::<span class="ident">DIGIDRUM_SIGNED</span>)
     }
 }
 
 <span class="kw">impl</span> <span class="ident">FxCtrlFlags</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_coarse_period</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u8</span> {
-        (<span class="self">self</span> <span class="op">&amp;</span> <span class="ident">FxCtrlFlags</span>::<span class="ident">COARSE_PERIOD_MASK</span>).<span class="ident">bits</span>()
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_timer_restart</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">intersects</span>(<span class="ident">FxCtrlFlags</span>::<span class="ident">MFP_TIMER_RESTART</span>)
-    }
-
+    <span class="doccomment">/// Returns the tuple of timer restart boolean and the channel number `[0, 2]` if an</span>
+    <span class="doccomment">/// effect is active. Otherwise returns `None`.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ts_channel</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">bool</span>, <span class="ident">u8</span>)<span class="op">&gt;</span> {
         <span class="ident">FxChannel</span>::<span class="ident">from</span>(<span class="self">self</span>).<span class="ident">channel</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">ch</span><span class="op">|</span>
-            (<span class="self">self</span>.<span class="ident">is_timer_restart</span>(), <span class="ident">ch</span>)
+            (<span class="self">self</span>.<span class="ident">intersects</span>(<span class="ident">FxCtrlFlags</span>::<span class="ident">MFP_TIMER_RESTART</span>), <span class="ident">ch</span>)
         )
     }
 
+    <span class="doccomment">/// Returns the channel number `[0, 2]` if an effect is active. Otherwise returns `None`.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">dd_channel</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
         <span class="ident">FxChannel</span>::<span class="ident">from</span>(<span class="self">self</span>).<span class="ident">channel</span>()
     }
 
+    <span class="doccomment">/// Returns the tuple of the effect type and the channel number `[0, 2]` if an</span>
+    <span class="doccomment">/// effect is active. Otherwise returns `None`.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fx6_channel</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">FxType</span>, <span class="ident">u8</span>)<span class="op">&gt;</span> {
         <span class="ident">FxChannel</span>::<span class="ident">from</span>(<span class="self">self</span>).<span class="ident">channel</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">ch</span><span class="op">|</span>
             (<span class="ident">FxType</span>::<span class="ident">from</span>(<span class="self">self</span>), <span class="ident">ch</span>)

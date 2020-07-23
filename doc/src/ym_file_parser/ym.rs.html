@@ -341,7 +341,15 @@
 <span id="341">341</span>
 <span id="342">342</span>
 <span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
 </pre><div class="example-wrap"><pre class="rust ">
+<span class="kw">use</span> <span class="ident">core</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">num</span>::<span class="ident">NonZeroU32</span>;
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">fmt</span>;
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Range</span>;
@@ -601,6 +609,12 @@
         <span class="self">self</span>
     }
 
+    <span class="doccomment">/// Returns the song duration.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">song_duration</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Duration</span> {
+        <span class="kw">let</span> <span class="ident">seconds</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">frames</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="self">self</span>.<span class="ident">frame_frequency</span> <span class="kw">as</span> <span class="ident">f64</span>;
+        <span class="ident">Duration</span>::<span class="ident">from_secs_f64</span>(<span class="ident">seconds</span>)
+    }
+
     <span class="doccomment">/// Returns the AY/YM chipset clock frequency.</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">clock_frequency</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">f32</span> {
@@ -645,13 +659,13 @@
 
     <span class="doccomment">/// Returns the value of the volume register for the indicated `chan`.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// The 2 lowest `chan` bits indicates the voice channel:</span>
+    <span class="doccomment">/// The 2 lowest bits of `chan` indicate the voice channel:</span>
     <span class="doccomment">/// ```text</span>
     <span class="doccomment">///  b1 b0 voice channel</span>
     <span class="doccomment">///  0  0  A</span>
     <span class="doccomment">///  0  1  B</span>
     <span class="doccomment">///  1  0  C</span>
-    <span class="doccomment">///  1  1  invalid</span>
+    <span class="doccomment">///  1  1  invalid (panics in debug mode)</span>
     <span class="doccomment">/// ```</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">vol</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">chan</span>: <span class="ident">u8</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u8</span> {
         <span class="kw">let</span> <span class="ident">chan</span> <span class="op">=</span> <span class="ident">chan</span> <span class="op">&amp;</span> <span class="number">3</span>;
