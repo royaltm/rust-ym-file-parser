@@ -58,7 +58,7 @@ the relevant voice:</p>
 determine the effect's volume.</li>
 <li>For the <a href="../ym_file_parser/effects/struct.SyncBuzzer.html" title="SyncBuzzer"><code>Sync Buzzer</code></a> the 4 lowest <code>X</code> bits determine the effect's <code>Envelope shape</code>.</li>
 <li>For the <a href="../ym_file_parser/effects/struct.DigiDrum.html" title="DigiDrum"><code>DIGI-DRUM</code></a> effect the 5 <code>X</code> bits determine the played sample number.</li>
-<li>The <code>DIGI-DRUM</code> sample plays until its end or if its overridden by another effect.</li>
+<li>The <code>DIGI-DRUM</code> sample plays until its end or if it's overridden by another effect.</li>
 <li>All other effects are active only for the duration of a single frame.</li>
 <li>When the <code>DIGI-DRUM</code> is active the volume register from the frame for the relevant voice is being
 ignored and the relevant voice mixer tone and noise bits are forced to be set.</li>
