@@ -27,15 +27,22 @@ pub enum YmVersion {
     Ym6,
 }
 
+impl YmVersion {
+    /// The YM version identifier tag as a string (4 ascii characters).
+    pub fn tag(self) -> &'static str {
+        match self {
+            YmVersion::Ym2 => "YM2!",
+            YmVersion::Ym3 => "YM3!",
+            YmVersion::Ym4 => "YM4!",
+            YmVersion::Ym5 => "YM5!",
+            YmVersion::Ym6 => "YM6!",
+        }
+    }
+}
+
 impl fmt::Display for YmVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            YmVersion::Ym2 => "Ym2!",
-            YmVersion::Ym3 => "Ym3!",
-            YmVersion::Ym4 => "Ym4!",
-            YmVersion::Ym5 => "Ym5!",
-            YmVersion::Ym6 => "Ym6!",
-        }.fmt(f)
+        self.tag().fmt(f)
     }
 }
 

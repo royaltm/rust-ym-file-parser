@@ -16,7 +16,7 @@ YM-files are distributed as compressed [LHA] archives.
 
 This library can help uncompress, parse the YM-files, and produce the AY/YM register changes for the players.
 
-The following YM-file types are supported: `Ym2!`, `Ym3!`, `YM3b`, `Ym4!`, `Ym5!` and `Ym6!`.
+The following YM-file types are supported: `YM2!`, `YM3!`, `YM3b`, `YM4!`, `YM5!` and `YM6!`.
 
 The YM music files can be downloaded from [here](https://bulba.untergrund.net/main_e.htm).
 
