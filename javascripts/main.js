@@ -141,6 +141,7 @@ AyPlayer.init().then(AyPlayerHandle => {
 |Led Storm 3\
 |Lightforce\
 |Master of magic\
+|Mine Sweeper\
 |Monty Highscore\
 |ND-Credits\
 |ND-Toxygene\
