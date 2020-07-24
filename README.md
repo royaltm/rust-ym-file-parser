@@ -8,7 +8,7 @@ YM-file parser
 ym-file-parser = { git = "https://github.com/royaltm/rust-ym-file-parser" }
 ```
 
-[Documentation].
+Check out the home page with a small web [demo]. See the [Documentation].
 
 The [YM-file format] was designed by [Leonard/OXYGENE] for his AY-emulator [StSound].
 
@@ -20,6 +20,7 @@ The following YM-file types are supported: `Ym2!`, `Ym3!`, `YM3b`, `Ym4!`, `Ym5!
 
 The YM music files can be downloaded from [here](https://bulba.untergrund.net/main_e.htm).
 
+[demo]: https://royaltm.github.io/rust-ym-file-parser/
 [Documentation]: https://royaltm.github.io/rust-ym-file-parser/doc/ym_file_parser/
 [YM-file format]: http://leonard.oxg.free.fr/ymformat.html
 [Leonard/OXYGENE]: http://leonard.oxg.free.fr
