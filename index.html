@@ -6,38 +6,53 @@
 
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-dark.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+    <!-- <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print"> -->
 
     <title>YM-file parser. by royaltm</title>
   </head>
 
   <body>
-
+    <canvas id="oscilloscope" width="1024" height="768"></canvas>
     <header>
       <div class="container">
         <h1>YM-file parser.</h1>
-        <h2>A library for parsing the AY/YM chiptune format files.</h2>
+        <h2>A library for parsing the YM chiptune format files.</h2>
 
         <section id="downloads">
-          <a href="https://github.com/royaltm/rust-ym-file-parser/zipball/master" class="btn">Download as .zip</a>
-          <a href="https://github.com/royaltm/rust-ym-file-parser/tarball/master" class="btn">Download as .tar.gz</a>
-          <a href="https://github.com/royaltm/rust-ym-file-parser" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+          <!-- <a href="https://github.com/royaltm/rust-ym-file-parser/zipball/master" class="btn">Download as .zip</a>
+          <a href="https://github.com/royaltm/rust-ym-file-parser/tarball/master" class="btn">Download as .tar.gz</a> -->
+          <a href="doc/ym_file_parser/" class="btn">View Documentation</a>
+          <a href="https://github.com/royaltm/rust-ym-file-parser" class="btn btn-github"><span class="icon"></span>View Repository on GitHub</a>
         </section>
       </div>
     </header>
-
     <div class="container">
       <section id="main_content">
         <h2>
 <a id="ym-file-parser" class="anchor" href="#ym-file-parser" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>YM-file parser</h2>
-<p><a href="doc/ym_file_parser/">Documentation</a>.</p>
-<p>This <a href="http://leonard.oxg.free.fr/ymformat.html">format</a> was designed by <a href="http://leonard.oxg.free.fr">Leonard/OXYGENE</a> for his AY-emulator <a href="http://leonard.oxg.free.fr/stsound.html">StSound</a>.</p>
-<p>YM-files are distributed as compressed <a href="https://en.wikipedia.org/wiki/LHA_(file_format)">LHA</a> archives.</p>
+<p>The <a href="http://leonard.oxg.free.fr/ymformat.html" target="_blank">YM-file format</a> was designed by <a href="http://leonard.oxg.free.fr" target="_blank">Leonard/OXYGENE</a> for his AY-emulator <a href="http://leonard.oxg.free.fr/stsound.html" target="_blank">StSound</a>.</p>
+<p>YM-files are distributed as compressed <a href="https://en.wikipedia.org/wiki/LHA_(file_format)" target="_blank">LHA</a> archives.</p>
 <p>This library can help uncompress, parse the YM-files, and produce the AY/YM register changes for the players.</p>
-<p>The YM music files can be downloaded from <a href="https://bulba.untergrund.net/main_e.htm">here</a>.</p>
+<p>The YM music files can be downloaded from <a href="https://bulba.untergrund.net/main_e.htm" target="_blank">here</a>.</p>
+<h3>Music Demo</h3>
+<p>You can play some <strong>YM-files</strong> using the <a href="https://en.wikipedia.org/wiki/General_Instrument_AY-3-8910" target="_blank">AY-3-8910 / YM2149F</a> WebAssembly based emulator (sources soon) and this library.</p>
+<p>
+  Play: <select id="ym-choice" class="btn"><option></option></select>
+  <button id="ym-pause" class="btn">⏸</button>
+  Gain: <select id="ym-volume" class="btn">
+    <option value="1.0">100%</option>
+    <option value="0.75">75%</option>
+    <option value="0.5" selected>50%</option>
+    <option value="0.25">25%</option>
+    <option value="0.15">15%</option>
+    <option value="0.10">10%</option>
+    <option value="0.05">5%</option>
+  </select>
+  <blockquote>Author: <strong id="ym-author">-</strong>, <strong id="ym-misc">-</strong></blockquote>
+</p>
       </section>
     </div>
-
-    
+    <script type="text/javascript" src="javascripts/player.js" async></script>
+    <script type="text/javascript" src="javascripts/main.js" async></script>
   </body>
 </html>
