@@ -348,6 +348,13 @@
 <span id="348">348</span>
 <span id="349">349</span>
 <span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">num</span>::<span class="ident">NonZeroU32</span>;
@@ -378,15 +385,22 @@
     <span class="ident">Ym6</span>,
 }
 
+<span class="kw">impl</span> <span class="ident">YmVersion</span> {
+    <span class="doccomment">/// The YM version identifier tag as a string (4 ascii characters).</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">tag</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span> {
+        <span class="kw">match</span> <span class="self">self</span> {
+            <span class="ident">YmVersion</span>::<span class="ident">Ym2</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;YM2!&quot;</span>,
+            <span class="ident">YmVersion</span>::<span class="ident">Ym3</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;YM3!&quot;</span>,
+            <span class="ident">YmVersion</span>::<span class="ident">Ym4</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;YM4!&quot;</span>,
+            <span class="ident">YmVersion</span>::<span class="ident">Ym5</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;YM5!&quot;</span>,
+            <span class="ident">YmVersion</span>::<span class="ident">Ym6</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;YM6!&quot;</span>,
+        }
+    }
+}
+
 <span class="kw">impl</span> <span class="ident">fmt</span>::<span class="ident">Display</span> <span class="kw">for</span> <span class="ident">YmVersion</span> {
     <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">YmVersion</span>::<span class="ident">Ym2</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;Ym2!&quot;</span>,
-            <span class="ident">YmVersion</span>::<span class="ident">Ym3</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;Ym3!&quot;</span>,
-            <span class="ident">YmVersion</span>::<span class="ident">Ym4</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;Ym4!&quot;</span>,
-            <span class="ident">YmVersion</span>::<span class="ident">Ym5</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;Ym5!&quot;</span>,
-            <span class="ident">YmVersion</span>::<span class="ident">Ym6</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;Ym6!&quot;</span>,
-        }.<span class="ident">fmt</span>(<span class="ident">f</span>)
+        <span class="self">self</span>.<span class="ident">tag</span>().<span class="ident">fmt</span>(<span class="ident">f</span>)
     }
 }
 

@@ -5,12 +5,13 @@ AyPlayer.init().then(AyPlayerHandle => {
   var volume = $("ym-volume");
   var author = $("ym-author");
   var misc = $("ym-misc");
+
+  var ay = null;
   var analyser = null;
   var analyserData = null;
   var oscilloscope = $("oscilloscope");
   var oscCtx = oscilloscope.getContext("2d");
 
-  var ay = null;
   choice.addEventListener("change", function(event) {
     setElemText(pause, "⏸");
     if (ay) {
@@ -29,7 +30,7 @@ AyPlayer.init().then(AyPlayerHandle => {
       ay = new AyPlayerHandle(0.125);
       analyser = ay.createAnalyser();
       analyser.fftSize = 2048;
-      analyserData = new Uint8Array(analyser.frequencyBinCount);
+      analyserData || (analyserData = new Uint8Array(analyser.frequencyBinCount));
       ay.connectAnalyser(analyser);
       ay.setGain(volume.value);
       ay.load(ymurl).then(info => {
