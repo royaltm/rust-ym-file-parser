@@ -35,7 +35,7 @@ AyPlayer.init().then(AyPlayerHandle => {
       ay.load(ymurl).then(info => {
         setElemText(author, info.author);
         setElemText(misc, info.misc);
-        console.log(ay.play(0));
+        ay.play(0);
       })
     }
   }, false);
@@ -49,7 +49,6 @@ AyPlayer.init().then(AyPlayerHandle => {
   }, false);
 
   volume.addEventListener("change", function(event) {
-    console.log(event.target.value)
     ay && ay.setGain(event.target.value)
   }, false);
 
