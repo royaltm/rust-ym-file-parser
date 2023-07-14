@@ -17,7 +17,6 @@ bitflags = "2.3"
 chrono = "0.4"
 lazy_static = "1.4"
 log = "0.4"
-simple_logger = "1.16.0"
 
 [dependencies.delharc]
 version = "0.5.0"
