@@ -20,7 +20,7 @@ pub enum FxType {
 }
 
 bitflags! {
-    #[derive(Default)]
+    #[derive(Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct SongAttributes: u32 {
         const INTERLEAVED     = 0x0000_0001;
         const DIGIDRUM_SIGNED = 0x0000_0002;
@@ -29,7 +29,7 @@ bitflags! {
 }
 
 bitflags! {
-    #[derive(Default)]
+    #[derive(Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct FxCtrlFlags: u8 {
         const COARSE_PERIOD_MASK = 0b0000_1111;
         const CHAN_CONTROL_MASK  = 0b0011_0000;

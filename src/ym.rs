@@ -305,12 +305,12 @@ impl YmSong {
 impl YmFrame {
     /// Returns special effect control flags from the register 1.
     pub fn fx0(&self) -> FxCtrlFlags {
-        FxCtrlFlags::from_bits_truncate(self.data[1])
+        FxCtrlFlags::from_bits_retain(self.data[1])
     }
 
     /// Returns special effect control flags from the register 3.
     pub fn fx1(&self) -> FxCtrlFlags {
-        FxCtrlFlags::from_bits_truncate(self.data[3])
+        FxCtrlFlags::from_bits_retain(self.data[3])
     }
 
     /// Returns the value of the volume register for the indicated `chan`.
