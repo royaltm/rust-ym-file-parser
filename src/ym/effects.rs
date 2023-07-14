@@ -63,7 +63,7 @@ struct TimerIter<'a> {
 }
 
 pub(super) struct Mixer<I: Iterator> {
-    iters: ArrayVec<[Peekable<I>;4]>
+    iters: ArrayVec<Peekable<I>, 4>
 }
 
 const SINUS_SID_PERIOD: usize = 8;
