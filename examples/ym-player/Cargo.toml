@@ -1,0 +1,26 @@
+[package]
+name = "ym-player"
+version = "0.1.0"
+authors = ["Rafal Michalski <royaltm75@gmail.com>"]
+edition = "2021"
+publish = false
+description = "An example YM chiptune format player using an AY-3-891x emulator."
+license = "MIT"
+readme = "README.md"
+
+[dependencies]
+clap = { version = "4.3.12", features = ["derive"] }
+cpal = "0.14"
+log = "0.4"
+simple_logger = "4.2"
+ym-file-parser = { path = "../.." }
+
+[dependencies.spectrusty]
+version = "*"
+default-features = false
+features = ["formats", "peripherals", "audio"]
+
+[dependencies.spectrusty-audio]
+version = "*"
+default-features = false
+features = ["cpal"]

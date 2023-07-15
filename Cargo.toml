@@ -9,7 +9,7 @@ homepage = "https://royaltm.github.io/rust-ym-file-parser/"
 repository = "https://github.com/royaltm/rust-ym-file-parser"
 license = "MIT"
 readme = "README.md"
-exclude = [".gitignore"]
+exclude = [".gitignore", "examples/*"]
 
 [dependencies]
 arrayvec = "0.7.4"
@@ -22,3 +22,8 @@ log = "0.4"
 version = "0.5.0"
 default-features = false
 features = []
+
+[workspace]
+members = [
+    "examples/*"
+]
