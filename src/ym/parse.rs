@@ -25,10 +25,11 @@ impl YmSong {
     /// Provide `file_name` which will be used as a fallback song title.
     ///
     /// Returns an instance of `YmSong` on success.
-    pub fn parse_any<R: Read + Seek>(
+    pub fn parse_any<R, S>(
             mut rd: R,
-            file_name: String
+            file_name: S
         ) -> io::Result<YmSong>
+        where R: Read + Seek, S: Into<String>
     {
         let pos = rd.seek(SeekFrom::Current(0))?;
         let mut rd = match LhaDecodeReader::new(rd) {
@@ -41,7 +42,7 @@ impl YmSong {
         let file_len = rd.seek(SeekFrom::End(0))?;
         rd.seek(SeekFrom::Start(pos))?;
         let mut buf_rd = io::BufReader::new(rd);
-        parse_ym(&mut buf_rd, file_len, file_name, None)
+        parse_ym(&mut buf_rd, file_len, file_name.into(), None)
     }
 
     /// Attempts to parse an uncompressed YM-file from the given stream source.
@@ -49,16 +50,17 @@ impl YmSong {
     /// Provide `file_name` which will be used as a fallback song title.
     ///
     /// Returns an instance of `YmSong` on success.
-    pub fn parse_unpacked<R: Read + Seek>(
+    pub fn parse_unpacked<R, S>(
             mut rd: R,
-            file_name: String
+            file_name: S
         ) -> io::Result<YmSong>
+        where R: Read + Seek, S: Into<String>
     {
         let pos = rd.seek(SeekFrom::Current(0))?;
         let file_len = rd.seek(SeekFrom::End(0))?;
         rd.seek(SeekFrom::Start(pos))?;
         let mut buf_rd = io::BufReader::new(rd);
-        parse_ym(&mut buf_rd, file_len, file_name, None)
+        parse_ym(&mut buf_rd, file_len, file_name.into(), None)
     }
 
     /// Attempts to parse a compressed YM-file from the given stream source.
