@@ -149,11 +149,7 @@ fn play_with_amps<A, SD, S>(
                                               .zip(sample_iter)
                     {
                         /* write samples to the first two audio channels */
-                        for (p, sample) in chans.iter_mut()
-                                                .zip([l,r].into_iter())
-                        {
-                            *p = sample;
-                        }
+                        chans[0..2].copy_from_slice(&[l,r]);
                     }
                     /* prepare BLEP for the next frame */
                     blep.next_frame();
@@ -176,11 +172,8 @@ fn play_with_amps<A, SD, S>(
                                                  .zip(sample_iter)
                     {
                         /* write samples to the first two audio channels */
-                        for (p, sample) in chans.iter_mut()
-                                                .zip([l, r])
-                        {
-                            *p = sample;
-                        }
+                        chans[0..2].copy_from_slice(&[l,r]);
+                        /* write a sample to the center audio channel */
                         chans[third_chan] = c;
                     }
                     /* prepare BLEP for the next frame */
@@ -195,13 +188,10 @@ fn play_with_amps<A, SD, S>(
             play_with_blep::<A, _, _, _, _>(audio, blep, ym_file, ampl_level, repeat, MONO_CHANNEL_MAP,
                 |blep, buf| {
                     for (chans, sample) in buf.chunks_mut(channels)
-                                               .zip(blep.sum_iter::<S>(0))
+                                              .zip(blep.sum_iter::<S>(0))
                     {
                         /* write samples to all audio channels */
-                        for p in chans.iter_mut()
-                        {
-                            *p = sample;
-                        }
+                        chans.fill(sample);
                     }
                     /* prepare BLEP for the next frame */
                     blep.next_frame();
