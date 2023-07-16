@@ -1,4 +1,5 @@
 //! YM player
+use std::io::{stdout, Write};
 use core::ops::AddAssign;
 use core::fmt;
 use spectrusty_core::{audio::*, chip::nanos_from_frame_tc_cpu_hz};
@@ -86,6 +87,39 @@ impl fmt::Display for ChannelMode {
         }
     }
 }
+
+fn print_time(secs: u32) {
+    let hours = secs / 3600;
+    let minutes = (secs % 3600) / 60;
+    let secs = secs % 60;
+    if hours != 0 {
+        print!("{hours}:{minutes:02}:{secs:02}");
+    }
+    else {
+        print!("{minutes:02}:{secs:02}");
+    }
+}
+
+fn print_current(last_secs: &mut u32, cur_secs: f32, total_secs: f32) {
+    let secs = cur_secs.trunc() as u32;
+    if *last_secs == secs {
+        return;
+    }
+    *last_secs = secs;
+    print!("\r");
+    print_time(secs);
+    print!(" -> ");
+    print_time((total_secs - cur_secs).trunc() as u32);
+    stdout().flush().unwrap();
+}
+
+struct PlayEnv {
+    ym_file: YmSong,
+    repeat: u32,
+    channel_map: ChannelMap,
+    track: bool
+}
+
 /****************************************************************************/
 /*                                  PLAYER                                  */
 /****************************************************************************/
@@ -93,11 +127,9 @@ impl fmt::Display for ChannelMode {
 fn play<SD, S>(
         fuse: bool,
         audio: AudioHandle<S>,
+        env: PlayEnv,
         mode: ChannelMode,
-        ym_file: YmSong,
-        repeat: u32,
-        volume: u8,
-        channel_map: ChannelMap
+        volume: u8
     )
     where SD: SampleDelta + FromSample<f32> + AddAssign + MulNorm,
           S: FromSample<SD> + AudioSample + cpal::Sample,
@@ -105,26 +137,24 @@ fn play<SD, S>(
           AyAmps<SD>: AmpLevels<SD>
 {
     if fuse {
-        play_with_amps::<AyFuseAmps<_>, _, _>(audio, mode, ym_file, repeat, volume, channel_map)
+        play_with_amps::<AyFuseAmps<_>, _, _>(audio, env, mode, volume)
     }
     else {
-        play_with_amps::<AyAmps<_>, _, _>(audio, mode, ym_file, repeat, volume, channel_map)
+        play_with_amps::<AyAmps<_>, _, _>(audio, env, mode, volume)
     }
 }
 
 fn play_with_amps<A, SD, S>(
         audio: AudioHandle<S>,
+        mut env: PlayEnv,
         mode: ChannelMode,
-        ym_file: YmSong,
-        repeat: u32,
-        volume: u8,
-        channel_map: ChannelMap
+        volume: u8
     )
     where SD: SampleDelta + FromSample<f32> + AddAssign + MulNorm,
           A: AmpLevels<SD>,
           S: FromSample<SD> + AudioSample + cpal::Sample
 {
-    log::debug!("Repeat: {repeat}, volume: {volume}%");
+    log::debug!("Repeat: {}, volume: {volume}%", env.repeat);
 
     let ampl_level = amplitude_level(volume);
     log::trace!("Amplitude filter: {ampl_level}");
@@ -139,7 +169,7 @@ fn play_with_amps<A, SD, S>(
             let blep = BlepStereo::build(mono_filter.into_sample())(
                 /* a stereo band-limited pulse buffer */
                 BandLimited::<SD>::new(2));
-            play_with_blep::<A, _, _, _, _>(audio, blep, ym_file, ampl_level, repeat, channel_map,
+            play_with_blep::<A, _, _, _, _>(audio, env, blep, ampl_level,
                 |blep, buf| {
                     /* an iterator of sample pairs (stereo channels) */
                     let sample_iter = blep.sum_iter::<S>(0).zip(
@@ -161,7 +191,7 @@ fn play_with_amps<A, SD, S>(
             /* a multi-channel band-limited pulse buffer */
             let blep = BandLimited::<SD>::new(3);
             let third_chan = (channel - 1) as usize;
-            play_with_blep::<A, _, _, _, _>(audio, blep, ym_file, ampl_level, repeat, channel_map,
+            play_with_blep::<A, _, _, _, _>(audio, env, blep, ampl_level,
                 |blep, buf| {
                     /* an iterator of sample pairs (stereo channels) */
                     let sample_iter = blep.sum_iter::<S>(0).zip(
@@ -185,7 +215,8 @@ fn play_with_amps<A, SD, S>(
             log::debug!("Mixer: mono");
             /* a monophonic band-limited pulse buffer */
             let blep = BandLimited::<SD>::new(1);
-            play_with_blep::<A, _, _, _, _>(audio, blep, ym_file, ampl_level, repeat, MONO_CHANNEL_MAP,
+            env.channel_map = MONO_CHANNEL_MAP;
+            play_with_blep::<A, _, _, _, _>(audio, env, blep, ampl_level,
                 |blep, buf| {
                     for (chans, sample) in buf.chunks_mut(channels)
                                               .zip(blep.sum_iter::<S>(0))
@@ -203,11 +234,9 @@ fn play_with_amps<A, SD, S>(
 
 fn play_with_blep<A, SD, S, B, F>(
         mut audio: AudioHandle<S>,
+        env: PlayEnv,
         bandlim: B,
-        mut ym_file: YmSong,
         ampl_level: SD,
-        repeat: u32,
-        channel_map: ChannelMap,
         render_audio: F
     )
     where A: AmpLevels<SD>,
@@ -216,6 +245,7 @@ fn play_with_blep<A, SD, S, B, F>(
           B: Blep<SampleDelta=SD>,
           F: Fn(&mut B, &mut Vec<S>)
 {
+    let PlayEnv { mut ym_file, repeat, channel_map, track } = env;
     log::debug!("Channels: {channel_map} {:?}", channel_map.0);
     /* Spectrusty's emulated AY is clocked at a half frequency of a host CPU clock,
        we need to adjust cycles counter */
@@ -243,6 +273,12 @@ fn play_with_blep<A, SD, S, B, F>(
 
     /* play counter */
     let mut counter = repeat;
+
+    /* total seconds */
+    let total_secs = ym_file.frames.len() as f32 / ym_file.frame_frequency as f32;
+
+    let mut last_secs: u32 = u32::MAX;
+
     loop {
         /* produce YM chipset changes */
         let finished = ym_file.produce_next_ay_frame(|ts, reg, val| {
@@ -271,6 +307,11 @@ fn play_with_blep<A, SD, S, B, F>(
 
         /* send a rendered sample buffer to the consumer */
         audio.producer.send_frame().unwrap();
+
+        if track {
+            let cur_secs = ym_file.cursor() as f32 / ym_file.frame_frequency as f32;
+            print_current(&mut last_secs, cur_secs, total_secs);
+        }
 
         if finished {
             log::info!("Finished.");
@@ -321,6 +362,10 @@ struct Args {
     /// Switch to alternative YM amplitude levels (measured vs specs).
     #[arg(short, long, default_value_t = false)]
     fuse: bool,
+
+    /// Track the current song time.
+    #[arg(short, long, default_value_t = false)]
+    track: bool,
 
     /// Log verbosity level.
     ///
@@ -441,20 +486,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     /* start audio thread */
     audio.play()?;
 
-    let Args { volume, repeat, channels, mode, fuse, .. } = args;
+    let Args { volume, repeat, channels, mode, fuse, track, .. } = args;
+
+    let env = PlayEnv { ym_file, repeat, channel_map: channels, track };
 
     match audio {
         AudioHandleAnyFormat::I16(audio) => {
             log::trace!("Audio format: I16");
-            play::<i16, _>(fuse, audio, mode, ym_file, repeat, volume, channels)
+            play::<i16, _>(fuse, audio, env, mode, volume)
         },
         AudioHandleAnyFormat::U16(audio) => {
             log::trace!("Audio format: U16");
-            play::<i16, _>(fuse, audio, mode, ym_file, repeat, volume, channels)
+            play::<i16, _>(fuse, audio, env, mode, volume)
         }
         AudioHandleAnyFormat::F32(audio) => {
             log::trace!("Audio format: F32");
-            play::<f32, _>(fuse, audio, mode, ym_file, repeat, volume, channels)
+            play::<f32, _>(fuse, audio, env, mode, volume)
         }
     }
 
