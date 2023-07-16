@@ -446,7 +446,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     log::trace!("Frame duration: {} ns", frame_duration_nanos);
 
     /* create an audio backend */
-    let audio = AudioHandleAnyFormat::create(&cpal::default_host(), frame_duration_nanos, 1)?;
+    let audio = AudioHandleAnyFormat::create(&cpal::default_host(), frame_duration_nanos, 5)?;
 
     /* start audio thread */
     audio.play()?;
