@@ -456,15 +456,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match audio {
         AudioHandleAnyFormat::I16(audio) => {
             log::trace!("Audio format: I16");
-            play::<i16, i16>(fuse, audio, mode, ym_file, repeat, volume, channels)
+            play::<i16, _>(fuse, audio, mode, ym_file, repeat, volume, channels)
         },
         AudioHandleAnyFormat::U16(audio) => {
             log::trace!("Audio format: U16");
-            play::<i16, u16>(fuse, audio, mode, ym_file, repeat, volume, channels)
+            play::<i16, _>(fuse, audio, mode, ym_file, repeat, volume, channels)
         }
         AudioHandleAnyFormat::F32(audio) => {
             log::trace!("Audio format: F32");
-            play::<f32, f32>(fuse, audio, mode, ym_file, repeat, volume, channels)
+            play::<f32, _>(fuse, audio, mode, ym_file, repeat, volume, channels)
         }
     }
 
