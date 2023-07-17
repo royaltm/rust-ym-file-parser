@@ -113,139 +113,30 @@ fn print_current(last_secs: &mut u32, cur_secs: f32, total_secs: f32) {
     stdout().flush().unwrap();
 }
 
-struct PlayEnv {
-    ym_file: YmSong,
-    repeat: u32,
-    channel_map: ChannelMap,
-    track: bool
-}
-
 /****************************************************************************/
 /*                                  PLAYER                                  */
 /****************************************************************************/
 
-fn play<SD, S>(
-        fuse: bool,
-        audio: AudioHandle<S>,
-        env: PlayEnv,
-        mode: ChannelMode,
-        volume: u8
-    )
-    where SD: SampleDelta + FromSample<f32> + AddAssign + MulNorm,
-          S: FromSample<SD> + AudioSample + cpal::Sample,
-          AyFuseAmps<SD>: AmpLevels<SD>,
-          AyAmps<SD>: AmpLevels<SD>
-{
-    if fuse {
-        play_with_amps::<AyFuseAmps<_>, _, _>(audio, env, mode, volume)
-    }
-    else {
-        play_with_amps::<AyAmps<_>, _, _>(audio, env, mode, volume)
-    }
-}
-
-fn play_with_amps<A, SD, S>(
-        audio: AudioHandle<S>,
-        mut env: PlayEnv,
-        mode: ChannelMode,
-        volume: u8
-    )
-    where SD: SampleDelta + FromSample<f32> + AddAssign + MulNorm,
-          A: AmpLevels<SD>,
-          S: FromSample<SD> + AudioSample + cpal::Sample
-{
-    log::debug!("Repeat: {}, volume: {volume}%", env.repeat);
-
-    let ampl_level = amplitude_level(volume);
-    log::trace!("Amplitude filter: {ampl_level}");
-    let ampl_level = SD::from_sample(ampl_level);
-
-    let channels = audio.channels as usize;
-
-    match mode {
-        ChannelMode::MixedStereo(mono_filter) if channels >= 2 => {
-            log::debug!("Mixer: stereo with filter: {mono_filter}");
-            /* a multi-channel to stereo mixer */
-            let blep = BlepStereo::build(mono_filter.into_sample())(
-                /* a stereo band-limited pulse buffer */
-                BandLimited::<SD>::new(2));
-            play_with_blep::<A, _, _, _, _>(audio, env, blep, ampl_level,
-                |blep, buf| {
-                    /* an iterator of sample pairs (stereo channels) */
-                    let sample_iter = blep.sum_iter::<S>(0).zip(
-                                      blep.sum_iter::<S>(1));
-                    /* render each sample */
-                    for (chans, (l, r)) in buf.chunks_mut(channels)
-                                              .zip(sample_iter)
-                    {
-                        /* write samples to the first two audio channels */
-                        chans[0..2].copy_from_slice(&[l,r]);
-                    }
-                    /* prepare BLEP for the next frame */
-                    blep.next_frame();
-                }
-            );
-        }
-        ChannelMode::Channel(channel) if channels >= channel as usize => {
-            log::debug!("Mixer: center played on audio channel: {}", channel);
-            /* a multi-channel band-limited pulse buffer */
-            let blep = BandLimited::<SD>::new(3);
-            let third_chan = (channel - 1) as usize;
-            play_with_blep::<A, _, _, _, _>(audio, env, blep, ampl_level,
-                |blep, buf| {
-                    /* an iterator of sample pairs (stereo channels) */
-                    let sample_iter = blep.sum_iter::<S>(0).zip(
-                                      blep.sum_iter::<S>(1)).zip(
-                                      blep.sum_iter::<S>(2));
-                    /* render each sample */
-                    for (chans, ((l,r),c)) in buf.chunks_mut(channels)
-                                                 .zip(sample_iter)
-                    {
-                        /* write samples to the first two audio channels */
-                        chans[0..2].copy_from_slice(&[l,r]);
-                        /* write a sample to the center audio channel */
-                        chans[third_chan] = c;
-                    }
-                    /* prepare BLEP for the next frame */
-                    blep.next_frame();
-                }
-            );
-        }
-        _ => {
-            log::debug!("Mixer: mono");
-            /* a monophonic band-limited pulse buffer */
-            let blep = BandLimited::<SD>::new(1);
-            env.channel_map = MONO_CHANNEL_MAP;
-            play_with_blep::<A, _, _, _, _>(audio, env, blep, ampl_level,
-                |blep, buf| {
-                    for (chans, sample) in buf.chunks_mut(channels)
-                                              .zip(blep.sum_iter::<S>(0))
-                    {
-                        /* write samples to all audio channels */
-                        chans.fill(sample);
-                    }
-                    /* prepare BLEP for the next frame */
-                    blep.next_frame();
-                }
-            );
-        }
-    }
+struct PlayEnv {
+    ym_file: YmSong,
+    ampl_level: f32,
+    repeat: u32,
+    channel_map: ChannelMap,
+    track: bool,
 }
 
 fn play_with_blep<A, SD, S, B, F>(
+        PlayEnv { mut ym_file, ampl_level, repeat, channel_map, track }: PlayEnv,
         mut audio: AudioHandle<S>,
-        env: PlayEnv,
         bandlim: B,
-        ampl_level: SD,
         render_audio: F
     )
     where A: AmpLevels<SD>,
-          SD: SampleDelta + MulNorm,
+          SD: SampleDelta + FromSample<f32> + MulNorm,
           S: AudioSample + cpal::Sample,
           B: Blep<SampleDelta=SD>,
           F: Fn(&mut B, &mut Vec<S>)
 {
-    let PlayEnv { mut ym_file, repeat, channel_map, track } = env;
     log::debug!("Channels: {channel_map} {:?}", channel_map.0);
     /* Spectrusty's emulated AY is clocked at a half frequency of a host CPU clock,
        we need to adjust cycles counter */
@@ -254,8 +145,8 @@ fn play_with_blep<A, SD, S, B, F>(
 
     log::trace!("AY host frequency: {} Hz, frame: {} cycles", host_frequency, host_frame_cycles);
 
-    /* create an BLEP amplitude filter wrapper */
-    let mut bandlim = BlepAmpFilter::build(ampl_level)(bandlim);
+    /* create a BLEP amplitude filter wrapper */
+    let mut bandlim = BlepAmpFilter::build(SD::from_sample(ampl_level))(bandlim);
 
     /* ensure BLEP has enough space to fit a single audio frame
        (there is no margin - our frames will have constant size). */
@@ -263,8 +154,6 @@ fn play_with_blep<A, SD, S, B, F>(
 
     /* number of audio output channels */
     let channels = audio.channels as usize;
-
-    log::debug!("Audio playback: {} Hz, {channels} ch.", audio.sample_rate);
 
     /* create an emulator instance */
     let mut ay = Ay3_891xAudio::default();
@@ -325,6 +214,147 @@ fn play_with_blep<A, SD, S, B, F>(
     }
 }
 
+fn play_with_amps<A, O, SD, S>(
+        audio: AudioHandle<S>,
+        ym_file: YmSong,
+        args: Args
+    )
+    where A: AmpLevels<SD>,
+          O: BandLimOpt,
+          SD: SampleDelta + FromSample<f32> + AddAssign + MulNorm,
+          S: FromSample<SD> + AudioSample + cpal::Sample
+{
+    let Args { volume, repeat, channels: channel_map, mode, track, .. } = args;
+    log::debug!("Repeat: {repeat}, volume: {volume}%");
+
+    let ampl_level = amplitude_level(args.volume);
+    log::trace!("Amplitude filter: {ampl_level}");
+
+    let mut env = PlayEnv { ym_file, ampl_level, repeat, channel_map, track };
+
+    let channels = audio.channels as usize;
+
+    match mode {
+        ChannelMode::MixedStereo(mono_filter) if channels >= 2 => {
+            log::debug!("Mixer: stereo with filter: {mono_filter}");
+            /* a multi-channel to stereo mixer */
+            let blep = BlepStereo::build(mono_filter.into_sample())(
+                /* a stereo band-limited pulse buffer */
+                BandLimited::<SD, O>::new(2));
+            play_with_blep::<A, _, _, _, _>(env, audio, blep,
+                |blep, buf| {
+                    /* an iterator of sample pairs (stereo channels) */
+                    let sample_iter = blep.sum_iter::<S>(0).zip(
+                                      blep.sum_iter::<S>(1));
+                    /* render each sample */
+                    for (chans, (l, r)) in buf.chunks_mut(channels)
+                                              .zip(sample_iter)
+                    {
+                        /* write samples to the first two audio channels */
+                        chans[0..2].copy_from_slice(&[l,r]);
+                    }
+                    /* prepare BLEP for the next frame */
+                    blep.next_frame();
+                }
+            );
+        }
+        ChannelMode::Channel(channel) if channels >= channel as usize => {
+            log::debug!("Mixer: center played on audio channel: {}", channel);
+            /* a multi-channel band-limited pulse buffer */
+            let blep = BandLimited::<SD, O>::new(3);
+            let third_chan = (channel - 1) as usize;
+            play_with_blep::<A, _, _, _, _>(env, audio, blep,
+                |blep, buf| {
+                    /* an iterator of sample pairs (stereo channels) */
+                    let sample_iter = blep.sum_iter::<S>(0).zip(
+                                      blep.sum_iter::<S>(1)).zip(
+                                      blep.sum_iter::<S>(2));
+                    /* render each sample */
+                    for (chans, ((l,r),c)) in buf.chunks_mut(channels)
+                                                 .zip(sample_iter)
+                    {
+                        /* write samples to the first two audio channels */
+                        chans[0..2].copy_from_slice(&[l,r]);
+                        /* write a sample to the center audio channel */
+                        chans[third_chan] = c;
+                    }
+                    /* prepare BLEP for the next frame */
+                    blep.next_frame();
+                }
+            );
+        }
+        _ => {
+            log::debug!("Mixer: mono");
+            /* a monophonic band-limited pulse buffer */
+            let blep = BandLimited::<SD, O>::new(1);
+            env.channel_map = MONO_CHANNEL_MAP;
+            play_with_blep::<A, _, _, _, _>(env, audio, blep,
+                |blep, buf| {
+                    for (chans, sample) in buf.chunks_mut(channels)
+                                              .zip(blep.sum_iter::<S>(0))
+                    {
+                        /* write samples to all audio channels */
+                        chans.fill(sample);
+                    }
+                    /* prepare BLEP for the next frame */
+                    blep.next_frame();
+                }
+            );
+        }
+    }
+}
+
+fn play_with_filter<O, SD, S>(
+        audio: AudioHandle<S>,
+        ym_file: YmSong,
+        args: Args
+    )
+    where O: BandLimOpt,
+          SD: SampleDelta + FromSample<f32> + AddAssign + MulNorm,
+          S: FromSample<SD> + AudioSample + cpal::Sample,
+          AyFuseAmps<SD>: AmpLevels<SD>,
+          AyAmps<SD>: AmpLevels<SD>
+{
+    if args.fuse {
+        log::debug!("YM amplitide levels: fuse (measured)");
+        play_with_amps::<AyFuseAmps<_>, O, _, _>(audio, ym_file, args)
+    }
+    else {
+        log::debug!("YM amplitide levels: default (specs)");
+        play_with_amps::<AyAmps<_>, O, _, _>(audio, ym_file, args)
+    }
+}
+
+fn play<SD, S>(
+        audio: AudioHandle<S>,
+        ym_file: YmSong,
+        args: Args
+    )
+    where SD: SampleDelta + FromSample<f32> + AddAssign + MulNorm,
+          S: FromSample<SD> + AudioSample + cpal::Sample,
+          AyFuseAmps<SD>: AmpLevels<SD>,
+          AyAmps<SD>: AmpLevels<SD>
+{
+    match (args.lpass, args.hpass) {
+        (false, false) => {
+            log::debug!("Band pass filter: wide");
+            play_with_filter::<BandLimWide   , _, _>(audio, ym_file, args)
+        },
+        (true,  false) => {
+            log::debug!("Band pass filter: low-pass");
+            play_with_filter::<BandLimLowTreb, _, _>(audio, ym_file, args)
+        },
+        (false,  true) => {
+            log::debug!("Band pass filter: high-pass");
+            play_with_filter::<BandLimLowBass, _, _>(audio, ym_file, args)
+        },
+        (true,   true) => {
+            log::debug!("Band pass filter: narrow");
+            play_with_filter::<BandLimNarrow , _, _>(audio, ym_file, args)
+        },
+    }
+}
+
 /****************************************************************************/
 /*                                   MAIN                                   */
 /****************************************************************************/
@@ -362,6 +392,14 @@ struct Args {
     /// Switch to alternative YM amplitude levels (measured vs specs).
     #[arg(short, long, default_value_t = false)]
     fuse: bool,
+
+    /// Enable low-pass audio band filter.
+    #[arg(long, default_value_t = false)]
+    lpass: bool,
+
+    /// Enable high-pass audio band filter.
+    #[arg(long, default_value_t = false)]
+    hpass: bool,
 
     /// Track the current song time.
     #[arg(short, long, default_value_t = false)]
@@ -436,19 +474,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     })?;
 
     let ym_file = match args.ym_file {
-        Some(ym_path) => {
+        Some(ref ym_path) => {
             log::info!("Loading YM file: {}", ym_path);
             ym_file_parser::parse_file(ym_path)?
         }
         None => YmSong::parse(BUZZ_YM)?
     };
 
-    log::info!(r#"{} "{}" by {}, {}, duration: {:?}"#,
+    log::info!(r#"{} "{}" by {}"#,
         ym_file.version,
         ym_file.title.trim(),
-        ym_file.author.trim(),
-        ym_file.comments.trim(),
-        ym_file.song_duration());
+        ym_file.author.trim());
+
+    log::info!(r#"Duration: {:?} {}"#,
+        ym_file.song_duration(),
+        ym_file.comments.trim());
 
     log::debug!("Chip: {} Hz, frame: {} Hz, {} cycles each",
         ym_file.clock_frequency(),
@@ -486,22 +526,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     /* start audio thread */
     audio.play()?;
 
-    let Args { volume, repeat, channels, mode, fuse, track, .. } = args;
-
-    let env = PlayEnv { ym_file, repeat, channel_map: channels, track };
-
     match audio {
         AudioHandleAnyFormat::I16(audio) => {
             log::trace!("Audio format: I16");
-            play::<i16, _>(fuse, audio, env, mode, volume)
+            play::<i16, _>(audio, ym_file, args)
         },
         AudioHandleAnyFormat::U16(audio) => {
             log::trace!("Audio format: U16");
-            play::<i16, _>(fuse, audio, env, mode, volume)
+            play::<i16, _>(audio, ym_file, args)
         }
         AudioHandleAnyFormat::F32(audio) => {
             log::trace!("Audio format: F32");
-            play::<f32, _>(fuse, audio, env, mode, volume)
+            play::<f32, _>(audio, ym_file, args)
         }
     }
 
