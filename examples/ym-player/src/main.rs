@@ -243,15 +243,13 @@ fn play_with_amps<A, O, SD, S>(
                 BandLimited::<SD, O>::new(2));
             play_with_blep::<A, _, _, _, _>(env, audio, blep,
                 |blep, buf| {
-                    /* an iterator of sample pairs (stereo channels) */
-                    let sample_iter = blep.sum_iter::<S>(0).zip(
-                                      blep.sum_iter::<S>(1));
-                    /* render each sample */
-                    for (chans, (l, r)) in buf.chunks_mut(channels)
-                                              .zip(sample_iter)
-                    {
-                        /* write samples to the first two audio channels */
-                        chans[0..2].copy_from_slice(&[l,r]);
+                    for chan in 0..=1 {
+                        for (p, sample) in buf[chan..].iter_mut()
+                                           .step_by(channels)
+                                           .zip(blep.sum_iter::<S>(chan))
+                        {
+                            *p = sample;
+                        }
                     }
                     /* prepare BLEP for the next frame */
                     blep.next_frame();
@@ -265,18 +263,14 @@ fn play_with_amps<A, O, SD, S>(
             let third_chan = (channel - 1) as usize;
             play_with_blep::<A, _, _, _, _>(env, audio, blep,
                 |blep, buf| {
-                    /* an iterator of sample pairs (stereo channels) */
-                    let sample_iter = blep.sum_iter::<S>(0).zip(
-                                      blep.sum_iter::<S>(1)).zip(
-                                      blep.sum_iter::<S>(2));
-                    /* render each sample */
-                    for (chans, ((l,r),c)) in buf.chunks_mut(channels)
-                                                 .zip(sample_iter)
+                    for (nchan, ochan) in [0, 1, third_chan].into_iter().enumerate()
                     {
-                        /* write samples to the first two audio channels */
-                        chans[0..2].copy_from_slice(&[l,r]);
-                        /* write a sample to the center audio channel */
-                        chans[third_chan] = c;
+                        for (p, sample) in buf[ochan..].iter_mut()
+                                           .step_by(channels)
+                                           .zip(blep.sum_iter::<S>(nchan))
+                        {
+                            *p = sample;
+                        }
                     }
                     /* prepare BLEP for the next frame */
                     blep.next_frame();
