@@ -169,6 +169,11 @@ fn play_with_blep<A, SD, S, B, F>(
     let mut last_secs: u32 = u32::MAX;
 
     loop {
+        if track {
+            let cur_secs = ym_file.cursor() as f32 / ym_file.frame_frequency as f32;
+            print_current(&mut last_secs, cur_secs, total_secs);
+        }
+
         /* produce YM chipset changes */
         let finished = ym_file.produce_next_ay_frame(|ts, reg, val| {
             changes.push(
@@ -196,11 +201,6 @@ fn play_with_blep<A, SD, S, B, F>(
 
         /* send a rendered sample buffer to the consumer */
         audio.producer.send_frame().unwrap();
-
-        if track {
-            let cur_secs = ym_file.cursor() as f32 / ym_file.frame_frequency as f32;
-            print_current(&mut last_secs, cur_secs, total_secs);
-        }
 
         if finished {
             log::info!("Finished.");
