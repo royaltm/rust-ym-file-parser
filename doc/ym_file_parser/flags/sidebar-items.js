@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["FxChannel",""],["FxType",""]],"struct":[["FxCtrlFlags",""],["SongAttributes",""]]});
+window.SIDEBAR_ITEMS = {"enum":["FxChannel","FxType"],"struct":["FxCtrlFlags","SongAttributes"]};

@@ -1,3 +1,3 @@
-(function() {var implementors = {};
-implementors["ym_file_parser"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html\" title=\"trait core::fmt::Display\">Display</a> for <a class=\"enum\" href=\"ym_file_parser/enum.YmVersion.html\" title=\"enum ym_file_parser::YmVersion\">YmVersion</a>","synthetic":false,"types":["ym_file_parser::ym::YmVersion"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
+(function() {var implementors = {
+"ym_file_parser":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html\" title=\"trait core::fmt::Display\">Display</a> for <a class=\"enum\" href=\"ym_file_parser/enum.YmVersion.html\" title=\"enum ym_file_parser::YmVersion\">YmVersion</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
