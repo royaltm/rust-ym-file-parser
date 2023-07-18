@@ -473,8 +473,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     log::trace!("Frame duration: {} ns", frame_duration_nanos);
 
+    let latency = 20000000 / frame_duration_nanos as usize + 5;
+
     /* create an audio backend */
-    let audio = AudioHandleAnyFormat::create(&cpal::default_host(), frame_duration_nanos, 5)?;
+    let audio = AudioHandleAnyFormat::create(&cpal::default_host(), frame_duration_nanos, latency)?;
 
     /* start audio thread */
     audio.play()?;
