@@ -213,7 +213,13 @@ fn play_with_blep<A, B, SD, S>(
     }
 
     /* let the audio thread finish playing */
-    std::thread::sleep(core::time::Duration::from_secs(1));
+    for _ in 0..50 {
+        audio.producer.render_frame(|ref mut buf| {
+            buf.fill(S::silence());
+        });
+        audio.producer.send_frame().unwrap();
+    }
+    audio.close();
 }
 
 fn play_with_amps<A, SD, S>(
