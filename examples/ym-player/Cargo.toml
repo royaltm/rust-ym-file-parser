@@ -15,16 +15,18 @@ log = "0.4"
 simple_logger = { version = "4.2", default-features = false, features = ["colors"] }
 ym-file-parser = { path = "../.." }
 
-
 [dependencies.spectrusty-core]
 version = "*"
+git = "https://github.com/royaltm/spectrusty"
 default-features = false
 
 [dependencies.spectrusty-peripherals]
 version = "*"
+git = "https://github.com/royaltm/spectrusty"
 default-features = false
 
 [dependencies.spectrusty-audio]
 version = "*"
+git = "https://github.com/royaltm/spectrusty"
 default-features = false
 features = ["cpal"]
