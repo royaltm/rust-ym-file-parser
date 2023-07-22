@@ -4,12 +4,13 @@ use core::ops::AddAssign;
 use core::fmt;
 use spectrusty_core::{audio::*, chip::nanos_from_frame_tc_cpu_hz};
 use spectrusty_audio::{
-    synth::*,
+    synth::ext::*,
     host::cpal::{AudioHandle, AudioHandleAnyFormat}
 };
 use spectrusty_peripherals::ay::{audio::*, AyRegister, AyRegChange};
 use ym_file_parser::YmSong;
 use clap::Parser;
+use cpal::traits::*;
 
 /* built-in song */
 static BUZZ_YM: &[u8] = include_bytes!("../BUZZ.YM");
@@ -134,7 +135,7 @@ fn play_with_blep<A, B, SD, S>(
     where A: AmpLevels<SD>,
           B: BandLimitedExt<SD, S> + ?Sized,
           SD: SampleDelta + FromSample<f32> + MulNorm,
-          S: AudioSample + cpal::Sample
+          S: AudioSample + cpal::SizedSample
 {
     log::debug!("Channels: {channel_map} {:?}", channel_map.0);
     /* Spectrusty's emulated AY is clocked at a half frequency of a host CPU clock,
@@ -229,7 +230,7 @@ fn play_with_amps<A, SD, S>(
     )
     where A: AmpLevels<SD>,
           SD: SampleDelta + FromSample<f32> + AddAssign + MulNorm + 'static + std::fmt::Debug,
-          S: FromSample<SD> + AudioSample + cpal::Sample
+          S: FromSample<SD> + AudioSample + cpal::SizedSample
 {
     let Args { volume, repeat, channels: channel_map, mode, track, hpass, lpass, .. } = args;
     log::debug!("Repeat: {repeat}, volume: {volume}%");
@@ -253,7 +254,7 @@ fn play_with_amps<A, SD, S>(
                 &|blep, buf| {
                     blep.render_audio_map_interleaved(buf, channels, &[0, 1]);
                     /* prepare BLEP for the next frame */
-                    blep.next_frame();
+                    blep.next_frame_ext();
                 }
             );
         }
@@ -267,7 +268,7 @@ fn play_with_amps<A, SD, S>(
                 &|blep, buf| {
                     blep.render_audio_map_interleaved(buf, channels, &[0, 1, third_chan]);
                     /* prepare BLEP for the next frame */
-                    blep.next_frame();
+                    blep.next_frame_ext();
                 }
             );
         }
@@ -281,7 +282,7 @@ fn play_with_amps<A, SD, S>(
                 &|blep, buf| {
                     blep.render_audio_fill_interleaved(buf, channels, 0);
                     /* prepare BLEP for the next frame */
-                    blep.next_frame();
+                    blep.next_frame_ext();
                 }
             );
         }
@@ -294,7 +295,7 @@ fn play<SD, S>(
         args: Args
     )
     where SD: SampleDelta + FromSample<f32> + AddAssign + MulNorm + 'static + std::fmt::Debug,
-          S: FromSample<SD> + AudioSample + cpal::Sample,
+          S: FromSample<SD> + AudioSample + cpal::SizedSample,
           AyFuseAmps<SD>: AmpLevels<SD>,
           AyAmps<SD>: AmpLevels<SD>
 {
@@ -311,6 +312,34 @@ fn play<SD, S>(
 /****************************************************************************/
 /*                                   MAIN                                   */
 /****************************************************************************/
+
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
+struct StreamConfigHint {
+    channels: Option<cpal::ChannelCount>,
+    sample_rate: Option<cpal::SampleRate>,
+    sample_format: Option<cpal::SampleFormat>
+}
+
+impl fmt::Display for StreamConfigHint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self == &StreamConfigHint::default() {
+            return f.write_str("*");
+        }
+        if let Some(format) = self.sample_format {
+            write!(f, "{:?}", format)?;
+        }
+        if self.channels.is_some() && self.sample_rate.is_some() {
+            f.write_str(",")?;
+        }
+        if let Some(channels) = self.channels {
+            write!(f, "{}", channels)?;
+        }
+        if let Some(rate) = self.sample_rate {
+            write!(f, "@{}", rate.0)?;
+        }
+        Ok(())
+    }
+}
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -353,6 +382,14 @@ struct Args {
     /// Enable high-pass audio band filter.
     #[arg(long, default_value_t = false)]
     hpass: bool,
+
+    /// Desired audio output parameters: ST,CHANS@RATE.
+    ///
+    /// ST is a sample type, e.g.: U8, I16, U32, F32.
+    /// 
+    /// CHANS is the number of channels and RATE is the sample rate.
+    #[arg(short, long, default_value_t = StreamConfigHint::default(), value_parser = parse_stream_config)]
+    audio: StreamConfigHint,
 
     /// Track the current song time.
     #[arg(short, long, default_value_t = false)]
@@ -416,6 +453,82 @@ fn parse_channels(s: &str) -> Result<ChannelMap, String> {
     Ok(ChannelMap(channels))
 }
 
+fn parse_stream_config(mut s: &str) -> Result<StreamConfigHint, String> {
+    let mut config = StreamConfigHint::default();
+    if s == "*" {
+        return Ok(config);
+    }
+    const FORMATS: &[([&str;2], cpal::SampleFormat)] = &[
+             (["i8", "I8"], cpal::SampleFormat::I8),
+             (["u8", "U8"], cpal::SampleFormat::U8),
+             (["i16", "I16"], cpal::SampleFormat::I16),
+             (["u16", "U16"], cpal::SampleFormat::U16),
+             (["i32", "I32"], cpal::SampleFormat::I32),
+             (["u32", "U32"], cpal::SampleFormat::U32),
+             (["f32", "F32"], cpal::SampleFormat::F32),
+             (["i64", "I64"], cpal::SampleFormat::I64),
+             (["u64", "U64"], cpal::SampleFormat::U64),
+             (["f64", "F64"], cpal::SampleFormat::F64)];
+    for ([lc, uc], format) in FORMATS.into_iter() {
+        if s.starts_with(lc) || s.starts_with(uc) {
+            config.sample_format = Some(*format);
+            (_, s) = s.split_at(lc.len());
+            break;
+        }
+    }
+    if s.starts_with(",") {
+        (_, s) = s.split_at(1);
+    }
+    let chan = match s.split_once("@") {
+        Some((chan, rate)) => {
+            if !rate.is_empty() {
+                config.sample_rate = Some(cpal::SampleRate(u32::from_str_radix(rate, 10)
+                                     .map_err(|_| "expected sample rate")?));
+            }
+            chan
+        },
+        None => s
+    };
+    if !chan.is_empty() {
+        config.channels = Some(u16::from_str_radix(chan, 10)
+                        .map_err(|_| "expected number of channels")?);
+    }
+    Ok(config)
+}
+
+fn find_best_audio_config(device: &cpal::Device, request: StreamConfigHint) -> Result<cpal::SupportedStreamConfig, Box<dyn std::error::Error>>
+{
+    let default_config = device.default_output_config()?;
+    if request == StreamConfigHint::default() {
+        return Ok(default_config);
+    }
+    let channels = request.channels.unwrap_or(2);
+    for config in device.supported_output_configs()? {
+        if config.channels() != channels {
+            continue;
+        }
+        if let Some(sample_format) = request.sample_format {
+            if config.sample_format() != sample_format {
+                continue;
+            }
+        }
+        else if config.sample_format() != default_config.sample_format() {
+            continue;
+        }
+        let sample_rate = match request.sample_rate {
+            Some(sample_rate) => if !(config.min_sample_rate()..=config.max_sample_rate()).contains(&sample_rate) {
+                continue;
+            }
+            else {
+                sample_rate
+            }
+            None => default_config.sample_rate()
+        };
+        return Ok(config.with_sample_rate(sample_rate));
+    }
+    Err("Could not find the audio configuration matching given parameters")?
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
@@ -473,27 +586,43 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     log::trace!("Frame duration: {} ns", frame_duration_nanos);
 
-    let latency = 20000000 / frame_duration_nanos as usize + 5;
+    let device = cpal::default_host().default_output_device().ok_or("no default audio device!")?;
+    log::debug!("Audio request: {}", args.audio);
+    let supported_config = find_best_audio_config(&device, args.audio)?;
+    log::trace!("Audio config supported: {supported_config:?}");
+    let config = supported_config.config();
+
+    // if let &cpal::SupportedBufferSize::Range { min, max } = supported_config.buffer_size() {
+    //     let frame_duration_secs = core::time::Duration::from_nanos(frame_duration_nanos.into()).as_secs_f64();
+    //     let audio_frame_samples = (config.sample_rate.0 as f64 * frame_duration_secs).ceil() as cpal::FrameCount;
+    //     if (min..=max).contains(&audio_frame_samples) {
+    //         config.buffer_size = cpal::BufferSize::Fixed(audio_frame_samples);
+    //     }
+    // }
 
     /* create an audio backend */
-    let audio = AudioHandleAnyFormat::create(&cpal::default_host(), frame_duration_nanos, latency)?;
+    log::trace!("Audio config selected: {config:?}");
+    let latency = 20000000 / frame_duration_nanos as usize + 5;
+    let audio = AudioHandleAnyFormat::create_with_device_config_and_sample_format(
+                    &device, &config, supported_config.sample_format(), frame_duration_nanos, latency)?;
+
+    log::trace!("Audio format: {:?}", audio.sample_format());
 
     /* start audio thread */
     audio.play()?;
 
     match audio {
-        AudioHandleAnyFormat::I16(audio) => {
-            log::trace!("Audio format: I16");
-            play::<i16, _>(audio, ym_file, args)
-        },
-        AudioHandleAnyFormat::U16(audio) => {
-            log::trace!("Audio format: U16");
-            play::<i16, _>(audio, ym_file, args)
-        }
-        AudioHandleAnyFormat::F32(audio) => {
-            log::trace!("Audio format: F32");
-            play::<f32, _>(audio, ym_file, args)
-        }
+        AudioHandleAnyFormat::I8(audio)  => play::<i16, _>(audio, ym_file, args),
+        AudioHandleAnyFormat::U8(audio)  => play::<i16, _>(audio, ym_file, args),
+        AudioHandleAnyFormat::I16(audio) => play::<i16, _>(audio, ym_file, args),
+        AudioHandleAnyFormat::U16(audio) => play::<i16, _>(audio, ym_file, args),
+        AudioHandleAnyFormat::I32(audio) => play::<i32, _>(audio, ym_file, args),
+        AudioHandleAnyFormat::U32(audio) => play::<i32, _>(audio, ym_file, args),
+        AudioHandleAnyFormat::I64(audio) => play::<f64, _>(audio, ym_file, args),
+        AudioHandleAnyFormat::U64(audio) => play::<f64, _>(audio, ym_file, args),
+        AudioHandleAnyFormat::F32(audio) => play::<f32, _>(audio, ym_file, args),
+        AudioHandleAnyFormat::F64(audio) => play::<f64, _>(audio, ym_file, args),
+        _ => Err("Unsupported audio sample format!")?
     }
 
     Ok(())

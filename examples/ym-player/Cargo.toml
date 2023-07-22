@@ -10,7 +10,7 @@ readme = "README.md"
 
 [dependencies]
 clap = { version = "4.3.12", features = ["derive"] }
-cpal = "0.14"
+cpal = "0.15"
 log = "0.4"
 simple_logger = { version = "4.2", default-features = false, features = ["colors"] }
 ym-file-parser = { path = "../.." }
@@ -18,15 +18,18 @@ ym-file-parser = { path = "../.." }
 [dependencies.spectrusty-core]
 version = "*"
 git = "https://github.com/royaltm/spectrusty"
+# path = "../../../../spectrusty/spectrusty-core"
 default-features = false
 
 [dependencies.spectrusty-peripherals]
 version = "*"
 git = "https://github.com/royaltm/spectrusty"
+# path = "../../../../spectrusty/spectrusty-peripherals"
 default-features = false
 
 [dependencies.spectrusty-audio]
 version = "*"
 git = "https://github.com/royaltm/spectrusty"
+# path = "../../../../spectrusty/spectrusty-audio"
 default-features = false
 features = ["cpal"]
