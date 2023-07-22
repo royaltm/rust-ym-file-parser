@@ -27,30 +27,30 @@ Arguments:
 Options:
   -v, --volume <VOLUME>
           Audio mixer volume: 0 - 100
-
+          
           [default: 50]
 
   -r, --repeat <REPEAT>
           Play counter, 0 to play forever
-
+          
           [default: 0]
 
   -c, --channels <CHANNELS>
           YM channels map: Left Center Right
-
+          
           [default: ACB]
 
   -m, --mode <MODE>
           Channel mode: s|m|0.s|N.
-
+          
           "s" - stereo mode with a center channel mixed with an amplitude of 0.8
-
+          
           "m" - monophonic mode, played on all audio channels
-
+          
           "0.s" - stereo mode, center channel amplitude: 0.s
-
+          
           "N" - multi-channel mode, redirect center channel to Nth (3+) audio channel
-
+          
           [default: 0.8]
 
   -f, --fuse
@@ -62,12 +62,21 @@ Options:
       --hpass
           Enable high-pass audio band filter
 
+  -a, --audio <AUDIO>
+          Desired audio output parameters: ST,CHANS@RATE.
+          
+          ST is a sample type, e.g.: U8, I16, U32, F32.
+          
+          CHANS is the number of channels and RATE is the sample rate.
+          
+          [default: *]
+
   -t, --track
           Track the current song time
 
   -d, --debug...
           Log verbosity level.
-
+          
           -d for INFO, -dd for DEBUG, -ddd for TRACE
 
   -h, --help
