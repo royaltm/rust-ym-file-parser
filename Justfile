@@ -20,6 +20,10 @@ update-ghp: doc
 cargo-doc:
   cargo +nightly doc --no-deps --lib
 
+# run the example
+run args="":
+  cargo run --release -p ym-player -- {{args}}
+
 test:
   cargo test
 
