@@ -491,18 +491,19 @@ fn parse_stream_config(mut s: &str) -> Result<StreamConfigHint, String> {
     };
     if !chan.is_empty() {
         config.channels = Some(u16::from_str_radix(chan, 10)
-                        .map_err(|_| "expected number of channels")?);
+                          .map_err(|_| "expected number of channels")?);
     }
     Ok(config)
 }
 
 fn find_best_audio_config(device: &cpal::Device, request: StreamConfigHint) -> Result<cpal::SupportedStreamConfig, Box<dyn std::error::Error>>
 {
+    log::trace!("Audio device: {}", device.name().unwrap_or_else(|e| e.to_string()));
     let default_config = device.default_output_config()?;
     if request == StreamConfigHint::default() {
         return Ok(default_config);
     }
-    let channels = request.channels.unwrap_or(2);
+    let channels = request.channels.unwrap_or(default_config.channels());
     for config in device.supported_output_configs()? {
         if config.channels() != channels {
             continue;
